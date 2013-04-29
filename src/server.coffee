@@ -10,6 +10,7 @@ util = require 'util'
 _ = require 'underscore'
 yaml = require 'js-yaml'
 chokidar = require 'chokidar'
+express = require 'express'
 
 #It's a bird, it's a plane, it's GUID-like!
 guid_like = () ->
@@ -18,10 +19,12 @@ guid_like = () ->
         hash.update "#{argument}", 'utf8'
     hash.digest 'hex'
 
-module.exports = (port, root) ->
+module.exports = (port, root, static_root) ->
     #fire up express with socket io
-    app = require('express')()
+    app = express()
     server = require('http').createServer(app)
+    if static_root
+        app.use express.static(static_root)
     io = io.listen(server)
     #hooking into the authorization handshake sequence
     io.configure ->

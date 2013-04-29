@@ -10,7 +10,7 @@ doc = """
 #{package_json.description}
 
 Usage:
-    superforker [options] <port> <handlers>
+    superforker [options] <port> <handlers> [<static>]
 
 Options:
     --help
@@ -24,5 +24,5 @@ Description:
 {docopt} = require 'docopt', version: package_json.version
 options = docopt doc
 process.env.SUPERFORKER_ROOT = path.join __dirname, '..'
-server options['<port>'], options['<handlers>']
+server options['<port>'], options['<handlers>'], options['<static>']
 

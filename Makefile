@@ -4,7 +4,7 @@ CURL ?= curl --silent
 .PHONY: test
 
 test: 
-	$(MAKE)	works_with_sockets works_with_watch
+	$(MAKE)	works_with_sockets works_with_watch works_with_static
 
 test_pass:
 	DIFF=cp $(MAKE) test
@@ -21,6 +21,11 @@ works_with_watch:
 	| tee /tmp/$@
 	$(DIFF) /tmp/$@ test/expected/$@
 
+works_with_static:
+	curl "http://localhost:8080/hello.txt" \
+	| tee /tmp/$@
+	$(DIFF) /tmp/$@ test/expected/$@
+
 #Do this in one window, then run make test in another
 test_start:
-	forever --watch --watchDirectory src bin/superforker 8080 test/handlers
+	forever --watch --watchDirectory src bin/superforker 8080 test/handlers test/static
