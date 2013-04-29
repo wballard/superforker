@@ -21,16 +21,6 @@ works_with_watch:
 	| tee /tmp/$@
 	$(DIFF) /tmp/$@ test/expected/$@
 
-environment:
-	./bin/superforker init environment "git://github.com/wballard/superforker.environment.git"
-	./bin/superforker init handlers "git://github.com/wballard/superforker.handlers.git"
-
-start:
-	./bin/superforker init
-	./bin/superforker start
-
-stop:
-	./bin/superforker stop
-
+#Do this in one window, then run make test in another
 test_start:
-	forever --watch --watchDirectory src src/server_shim.js 8080 test/handlers
+	forever --watch --watchDirectory src bin/superforker 8080 test/handlers
