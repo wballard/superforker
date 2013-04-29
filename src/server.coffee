@@ -11,6 +11,7 @@ _ = require 'underscore'
 yaml = require 'js-yaml'
 chokidar = require 'chokidar'
 express = require 'express'
+require 'colors'
 
 #It's a bird, it's a plane, it's GUID-like!
 guid_like = () ->
@@ -136,5 +137,10 @@ module.exports = (port, root, static_root) ->
                 childProcess.stdin.end JSON.stringify(message.stdin)
     #have socket.io not yell so much
     io.set 'log level', 0
-    util.log "serving handlers from #{root} with node #{process.version}"
+    util.log "server start #{process.pid}".green
+    util.log "serving handlers from #{root} with node #{process.version}".blue
+    if static_root
+        util.log "serving static from #{static_root} with node #{process.version}".blue
+    process.on 'exit', ->
+        util.log "server shutdown #{process.pid}".red
     server.listen port
