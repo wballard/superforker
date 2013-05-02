@@ -66,7 +66,9 @@ module.exports = (port, root, static_root) ->
         _.extend {}, process.env, environment
     #message processing at its finest
     io.on 'connection', (socket) ->
-        util.log "connected as #{socket.handshake.USER}"
+        if socket.handshake.USER
+            util.log "connected as #{socket.handshake.USER}"
+            socket.emit 'hello', socket.handshake.USER
         socket.on 'disconnect', ->
             util.log "disconnected as #{socket.handshake.USER}"
             if socket.watcher
