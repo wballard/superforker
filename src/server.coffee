@@ -47,8 +47,10 @@ module.exports = (port, root, static_root) ->
                     child_process.execFile authpath, [handshakeData.query.authtoken],
                         (error, stdout, stderr) ->
                             if error
+                                util.error "authorization error #{stdout} #{stderr}".red
                                 callback stderr, false
                             else
+                                util.log "authorization success".green
                                 handshakeData.USER = yaml.safeLoad stdout
                                 callback null, true
     error_count = 0
@@ -122,7 +124,7 @@ module.exports = (port, root, static_root) ->
                         #we only return stdout back in the messages
                         process.stderr.write stderr
                     if ack
-                        #socket io paired callback case
+                        #socket io synchronous callback case
                         try
                             ack(JSON.parse(stdout))
                         catch error
