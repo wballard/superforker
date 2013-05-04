@@ -60,6 +60,8 @@ module.exports = (port, root, static_root) ->
             PATH_INFO: message.command
             SCRIPT_NAME: path.basename(message.path)
             USER: yaml.dump(user)
+            ROOT: path.resolve(root)
+            STATIC_ROOT: path.resolve(static_root)
         #flag to look for stdin, really just for testing
         if message.stdin
             environment.READ_STDIN = "TRUE"
