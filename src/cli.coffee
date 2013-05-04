@@ -24,7 +24,7 @@ Description:
 {docopt} = require 'docopt', version: package_json.version
 options = docopt doc
 process.env.SUPERFORKER_ROOT = path.join __dirname, '..'
-process.env.ROOT: path.resolve options['<handlers>']
-process.env.STATIC_ROOT: path.resolve options['<static>']
+process.env.ROOT = path.resolve options['<handlers>']
+process.env.STATIC_ROOT = path.resolve options['<static>']
 server options['<port>'], options['<handlers>'], options['<static>']
 
