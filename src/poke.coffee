@@ -48,18 +48,18 @@ do () ->
                 path: path.join directory, 'a.txt'
                 content: 'Hello'
         socket.on 'addFile', (message) ->
-            console.log 'add', message
+            console.log 'add', message.filename
             sleep.sleep 1
             socket.emit 'writeFile',
                 path: path.join directory, 'a.txt'
                 content: 'World'
         socket.on 'changeFile', (message) ->
-            console.log 'change', message
+            console.log 'change', message.filename
             sleep.sleep 1
             socket.emit 'unlinkFile',
                 path: path.join directory, 'a.txt'
         socket.on 'unlinkFile', (message) ->
-            console.log 'unlink', message
+            console.log 'unlink', message.filename
             process.exit()
         setTimeout (-> process.exit(1)), 5000
         ''

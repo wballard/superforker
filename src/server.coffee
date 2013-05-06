@@ -85,17 +85,34 @@ module.exports = (port, root, static_root) ->
                     path: message.path
         socket.on 'watch', (message) ->
             if not socket.watcher
-                socket.watcher = chokidar.watch __filename
+                socket.watcher = chokidar.watch __filename,
+                    ignored: (item) ->
+                        #'hidden' directories are skipped and chokidar is nice
+                        #enough to then not recurse
+                        path.basename(item).indexOf('.') is 0
             if not socket.watcher[message.directory]
                 socket.watcher[message.directory] = true
                 socket.watcher.add message.directory
             watcher = socket.watcher
+            emitFileMessage = (message_name, filename) ->
+                fs.readFile filename, (error, data) ->
+                    message =
+                        filename: filename
+                        error: error
+                    if data and path.extname(filename) is '.yaml'
+                        message.data = yaml.safeLoad(data.toString())
+                        message.object = true
+                    else
+                        message.data = data and data.toString()
+                    #good to go
+                    socket.emit message_name, message
             watcher.on 'add', (filename) ->
-                socket.emit 'addFile', (filename)
+                emitFileMessage 'addFile', filename
             watcher.on 'change', (filename) ->
-                socket.emit 'changeFile', (filename)
+                emitFileMessage 'changeFile', filename
             watcher.on 'unlink', (filename) ->
-                socket.emit 'unlinkFile', (filename)
+                socket.emit 'unlinkFile',
+                    filename: filename
         socket.on 'exec', (message, ack) ->
             message.path = path.join root, message.command
             util.log message.path, root
