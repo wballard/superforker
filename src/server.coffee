@@ -68,13 +68,45 @@ module.exports = (port, root, static_root) ->
         _.extend {}, process.env, environment
     #message processing at its finest
     io.on 'connection', (socket) ->
+        #file watching
+        #per connection file watcher
+        if not socket.watcher
+            socket.watcher = chokidar.watch __filename,
+                ignored: (item) ->
+                    #'hidden' directories are skipped and chokidar is nice
+                    #enough to then not recurse
+                    path.basename(item).indexOf('.') is 0
+        emitFileMessage = (message_name, filename) ->
+            fs.readFile filename, (error, data) ->
+                message =
+                    filename: filename
+                    error: error
+                if data and path.extname(filename) is '.yaml'
+                    message.data = yaml.safeLoad(data.toString())
+                    message.object = true
+                else
+                    message.data = data and data.toString()
+                #good to go
+                socket.emit message_name, message
+        socket.watcher.on 'add', (filename) ->
+            emitFileMessage 'addFile', filename
+        socket.watcher.on 'change', (filename) ->
+            emitFileMessage 'changeFile', filename
+        socket.watcher.on 'unlink', (filename) ->
+            socket.emit 'unlinkFile',
+                filename: filename
+        #message handling
+        #authentication callback, allows clients to know who they are and
+        #request additional data
         if socket.handshake.USER
             util.log "connected as #{socket.handshake.USER}"
             socket.emit 'hello', socket.handshake.USER
+        #disconnection clears up the watcher
         socket.on 'disconnect', ->
             util.log "disconnected as #{socket.handshake.USER}"
             if socket.watcher
                 socket.watcher.close()
+        #these are really just for testing, and likely need ot be turned off
         socket.on 'unlinkFile', (message) ->
             fs.unlink message.path, ->
                 socket.emit 'unlinkFileComplete',
@@ -83,39 +115,16 @@ module.exports = (port, root, static_root) ->
             fs.writeFile message.path, message.content, ->
                 socket.emit 'writeFileComplete',
                     path: message.path
+        #install file watching with this message
         socket.on 'watch', (message) ->
-            if not socket.watcher
-                socket.watcher = chokidar.watch __filename,
-                    ignored: (item) ->
-                        #'hidden' directories are skipped and chokidar is nice
-                        #enough to then not recurse
-                        path.basename(item).indexOf('.') is 0
+            #add the watched directory, checking for duplicates
             if not socket.watcher[message.directory]
-                socket.watcher[message.directory] = true
                 socket.watcher.add message.directory
-            watcher = socket.watcher
-            emitFileMessage = (message_name, filename) ->
-                fs.readFile filename, (error, data) ->
-                    message =
-                        filename: filename
-                        error: error
-                    if data and path.extname(filename) is '.yaml'
-                        message.data = yaml.safeLoad(data.toString())
-                        message.object = true
-                    else
-                        message.data = data and data.toString()
-                    #good to go
-                    socket.emit message_name, message
-            watcher.on 'add', (filename) ->
-                emitFileMessage 'addFile', filename
-            watcher.on 'change', (filename) ->
-                emitFileMessage 'changeFile', filename
-            watcher.on 'unlink', (filename) ->
-                socket.emit 'unlinkFile',
-                    filename: filename
+            #keep track of the message for the directory, think of this as
+            #the options
+            socket.watcher[message.directory] = message
         socket.on 'exec', (message, ack) ->
             message.path = path.join root, message.command
-            util.log message.path, root
             child_options =
                 env: setup_environment(message, {}, socket.handshake.USER)
             childProcess = child_process.execFile message.path, message.args, child_options,
