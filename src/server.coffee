@@ -24,6 +24,7 @@ module.exports = (port, root, static_root) ->
     #fire up express with socket io
     app = express()
     app.use express.compress()
+    app.enable('trust proxy')
     server = require('http').createServer(app)
     if static_root
         app.use express.static(static_root)
