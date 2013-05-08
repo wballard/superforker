@@ -50,7 +50,7 @@ module.exports = (port, root, static_root) ->
                                 util.error "authorization error #{stdout} #{stderr}".red
                                 callback stderr, false
                             else
-                                util.log "authorization success".green
+                                util.log "authorization success".green + stdout
                                 handshakeData.USER = yaml.safeLoad stdout
                                 callback null, true
     error_count = 0
@@ -59,7 +59,10 @@ module.exports = (port, root, static_root) ->
         environment =
             PATH_INFO: message.command
             SCRIPT_NAME: path.basename(message.path)
-            USER: yaml.dump(user)
+            USER: if _.isString(user)
+                user
+            else
+                yaml.dump(user)
         #flag to look for stdin, really just for testing
         if message.stdin
             environment.READ_STDIN = "TRUE"
@@ -152,13 +155,13 @@ module.exports = (port, root, static_root) ->
                     if ack
                         #socket io synchronous callback case
                         try
-                            ack(JSON.parse(stdout))
+                            ack(yaml.safeLoad(stdout))
                         catch error
                             ack(stdout)
                     else
                         #or just a message back
                         try
-                            socket.emit 'exec', JSON.parse(stdout)
+                            socket.emit 'exec', yaml.safeLoad(stdout)
                         catch error
                             socket.emit 'exec', stdout
             #if we have content, pipe it along to the forked process
