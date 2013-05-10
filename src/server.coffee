@@ -131,20 +131,23 @@ module.exports = (port, root, static_root) ->
             message.path = path.join root, message.command
             child_options =
                 env: setup_environment(message, {}, socket.handshake.USER)
+                maxBuffer: 1024 * 1024
+            console.log message.path, message.args
             childProcess = child_process.execFile message.path, message.args, child_options,
                 (error, stdout, stderr) ->
                     if error
+                        util.error error
                         #big old error object in a JSON ball
-                        error =
+                        errorPacket =
                             id: guid_like(Date.now(), error_count++)
                             at: Date.now()
                             error: error
                             message: stderr
-                        errorString = JSON.stringify(error)
+                        errorString = JSON.stringify(errorPacket)
                         #for out own output so we can sweep this up in server logs
                         process.stderr.write errorString
                         process.stderr.write "\n"
-                        socket.emit 'error', error
+                        socket.emit 'error', errorPacket
                         #non zero exit code, we are toast and not going
                         #on to any potential ack
                         return
