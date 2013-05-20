@@ -23,8 +23,13 @@ guid_like = () ->
 module.exports = (port, root, static_root) ->
     #fire up express with socket io
     app = express()
-    app.use express.compress()
     app.enable('trust proxy')
+    #no caching, no fooling
+    app.use (req, res, next) ->
+        res.setHeader "Cache-Control", "no-store, no-cache, must-revalidate"
+        res.setHeader "Expires", -1
+        next()
+    app.use express.compress()
     server = require('http').createServer(app)
     if static_root
         app.use express.static(static_root)
