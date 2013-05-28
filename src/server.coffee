@@ -11,6 +11,8 @@ _ = require 'underscore'
 yaml = require 'js-yaml'
 chokidar = require 'chokidar'
 express = require 'express'
+requirejs = require 'requirejs'
+temp = require 'temp'
 require 'colors'
 
 #It's a bird, it's a plane, it's GUID-like!
@@ -20,7 +22,7 @@ guid_like = () ->
         hash.update "#{argument}", 'utf8'
     hash.digest 'hex'
 
-module.exports = (port, root, static_root) ->
+module.exports = (port, root, static_root, require_config) ->
     #fire up express with socket io
     app = express()
     app.enable('trust proxy')
@@ -31,7 +33,30 @@ module.exports = (port, root, static_root) ->
         next()
     app.use express.compress()
     server = require('http').createServer(app)
+    if require_config
+        util.log "Serving a require.js optimized package from #{require_config}".green
+        app.use (req, res, next) ->
+            if req.path is require_config
+                #interception for require.js
+                config_file = path.join static_root, url.parse(req.path).pathname
+                target_file = temp.path suffix: '.js'
+                util.log "Optimizing #{config_file} into #{target_file}".green
+                child_process.execFile path.join(__dirname, '../node_modules/.bin/r.js'),
+                    ['-o', config_file, "out=#{target_file}"], (error, stdout, stderr) ->
+                        if error
+                            res.status(500).end "Build error \n#{stdout}\n #{stderr}"
+                        else
+                            fs.readFile target_file, (err, data) ->
+                                if err
+                                    res.status(500).end "Build error \n#{target_file}\n #{err}"
+                                else
+                                    res.setHeader 'Content-Type', 'application/javascript'
+                                    res.status(200).end data
+                                    fs.unlink target_file
+            else
+                next()
     if static_root
+        util.log "Serving static content from #{static_root}".green
         app.use express.static(static_root)
     io = io.listen(server)
     #hooking into the authorization handshake sequence
@@ -56,7 +81,7 @@ module.exports = (port, root, static_root) ->
                                 util.error "authorization error #{stdout} #{stderr}".red
                                 callback stderr, false
                             else
-                                util.log "authorization success".green + stdout
+                                util.log "authorization success ".green + stdout
                                 handshakeData.USER = yaml.safeLoad stdout
                                 callback null, true
     error_count = 0
