@@ -14,8 +14,6 @@
     "chokidar": "",
     "colors": "",
     "sleep": "",
-    "requirejs": "",
-    "temp": ""
   },
   "engine": {
     "node": ">=0.8.11"
