@@ -13,7 +13,7 @@
     "js-yaml": "",
     "chokidar": "",
     "colors": "",
-    "sleep": "",
+    "sleep": ""
   },
   "engine": {
     "node": ">=0.8.11"
